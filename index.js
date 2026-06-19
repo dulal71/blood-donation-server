@@ -33,8 +33,7 @@ if(req.query.status){
 }
 if(req.query.page){
   const page = req.query.page
- 
-  const perPage = 9
+ const perPage = 9
  const skip = (page-1) * 9
  const cursor= donationRequestCollection.find(query).skip(skip).limit(perPage)
   const donations = await cursor.toArray()
@@ -60,8 +59,8 @@ const id = req.params.id
 const query = {
   _id:new ObjectId(id)
 }
-const cursor= donationRequestCollection.find(query)
-  const result = await cursor.toArray()
+
+  const result = await donationRequestCollection.findOne(query)
   res.send(result)
   }catch(error){
     res.status(500).json({
