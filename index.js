@@ -107,6 +107,33 @@ res.send(result)
   }
 })
 
+
+// update status 
+
+app.patch('/api/donationRequest/:id' ,async(req,res)=>{
+  try{
+    const id = req.params.id
+    const updateStatus=req.body
+    const query={
+      _id:new ObjectId(id)
+    }
+    console.log(updateStatus);
+    const update={
+      $set:{
+        status:updateStatus.status
+      }
+    }
+    const result =await donationRequestCollection.updateOne(query,update)
+    res.send(result)
+
+  }catch(error){
+res.status(500).json({
+  success:false,
+ message: error.message 
+})
+  }
+})
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
