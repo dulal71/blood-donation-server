@@ -31,19 +31,15 @@ const query={}
 if(req.query.status){
   query.status=req.query.status
 }
-if(req.query.page){
-  const page = req.query.page
- const perPage = 9
- const skip = (page-1) * 9
+
+const  page = parseInt(req.query.page) || 1
+const perPage = 9
+ const skip = (page-1) * perPage
+ const totalData = await donationRequestCollection.countDocuments(query)
  const cursor= donationRequestCollection.find(query).skip(skip).limit(perPage)
-  const donations = await cursor.toArray()
- 
- return  res.send(donations)
-}
-const cursor= donationRequestCollection.find(query)
   const result = await cursor.toArray()
-  res.send(result)
-  }catch(error){
+ return res.send({ result, totalData })
+}catch(error){
     res.status(500).json({
       success:false,
       error:error.message
@@ -70,6 +66,25 @@ const query = {
   }
 
 })
+// get donation by  user id
+app.get('/api/donationRequest/user/:requesterId',async(req,res)=>{
+  try{
+const requesterId = req.params.requesterId
+const page = req.query.page || 1
+const perPage = 5;
+const skip = (page-1) * perPage
+const totalData =await donationRequestCollection.countDocuments({requesterId})
+  const cursor =  donationRequestCollection.find({requesterId}).sort({createAt:-1}).skip(skip).limit(perPage)
+  const result = await cursor.toArray()
+  res.send({result, totalData})
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+
+})
 
 
 // add donation request
@@ -79,7 +94,7 @@ app.post('/api/donationRequest',async(req,res)=>{
    
     const newData={
       ...data,
-      createAt: new Date()
+      createdAt: new Date()
     }
     
 const result = await donationRequestCollection.insertOne(newData)
