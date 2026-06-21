@@ -117,10 +117,13 @@ app.patch('/api/donationRequest/:id' ,async(req,res)=>{
     const query={
       _id:new ObjectId(id)
     }
-    console.log(updateStatus);
+    
     const update={
       $set:{
-        status:updateStatus.status
+        status:updateStatus.status,
+        donorId:updateStatus.donorId,
+   donorEmail:updateStatus.donorEmail,
+   donorName:updateStatus.donorName
       }
     }
     const result =await donationRequestCollection.updateOne(query,update)
@@ -133,6 +136,24 @@ res.status(500).json({
 })
   }
 })
+
+// delete donation
+app.delete('/api/donationRequest/:id' ,async(req,res)=>{
+  try{
+    const id = req.params.id
+   const query={
+      _id:new ObjectId(id)
+    }
+    const result =await donationRequestCollection.deleteOne(query)
+    res.send(result)
+ }catch(error){
+res.status(500).json({
+  success:false,
+ message: error.message 
+})
+  }
+})
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
