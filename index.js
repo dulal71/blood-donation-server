@@ -23,7 +23,7 @@ async function run() {
     await client.connect();
     const database=client.db("blood-donation")
     const donationRequestCollection=database.collection("donation-request")
-
+   const userCollection = database.collection('user')
 // get donation request
 app.get('/api/donationRequest',async(req,res)=>{
   try{
@@ -66,15 +66,22 @@ const query = {
   }
 
 })
+
 // get donation by  user id
 app.get('/api/donationRequest/user/:requesterId',async(req,res)=>{
   try{
 const requesterId = req.params.requesterId
+const query={requesterId}
+if(req.query.status && req.query.status !== 'undefined'){
+  query.status=req.query.status
+}
+
+
 const page = req.query.page || 1
 const perPage = 5;
 const skip = (page-1) * perPage
-const totalData =await donationRequestCollection.countDocuments({requesterId})
-  const cursor =  donationRequestCollection.find({requesterId}).sort({createAt:-1}).skip(skip).limit(perPage)
+const totalData =await donationRequestCollection.countDocuments(query)
+  const cursor =  donationRequestCollection.find(query).sort({createAt:-1}).skip(skip).limit(perPage)
   const result = await cursor.toArray()
   res.send({result, totalData})
   }catch(error){
@@ -113,20 +120,16 @@ res.send(result)
 app.patch('/api/donationRequest/:id' ,async(req,res)=>{
   try{
     const id = req.params.id
-    const updateStatus=req.body
+    const {status, donorId, donorEmail, donorName}=req.body
     const query={
       _id:new ObjectId(id)
     }
     
-    const update={
-      $set:{
-        status:updateStatus.status,
-        donorId:updateStatus.donorId,
-   donorEmail:updateStatus.donorEmail,
-   donorName:updateStatus.donorName
-      }
-    }
-    const result =await donationRequestCollection.updateOne(query,update)
+    const isStatusOnly = status === "done" || status === "canceled" 
+    const updateData = isStatusOnly ? 
+    {status} : {status, donorId, donorEmail, donorName}
+  
+    const result =await donationRequestCollection.updateOne(query,{$set:updateData})
     res.send(result)
 
   }catch(error){
@@ -136,6 +139,32 @@ res.status(500).json({
 })
   }
 })
+
+//donation edit
+app.patch('/api/donationRequest/edit/:id',async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const query={
+      _id:new ObjectId(id)
+    }
+    const  { hospitalName, fullAddress, donationDate, donationTime } = req.body
+   const updateData = {
+    $set:{
+      hospitalName,
+      fullAddress,
+      donationDate,
+      donationTime
+    }
+   }
+    const result = await donationRequestCollection.updateOne(query,updateData)
+    res.send(result)
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+} )
 
 // delete donation
 app.delete('/api/donationRequest/:id' ,async(req,res)=>{
@@ -153,6 +182,30 @@ res.status(500).json({
 })
   }
 })
+
+// update user status
+app.patch('/api/user/:id',async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const query={
+      _id:new ObjectId(id)
+    }
+    const   {status}  = req.body
+    console.log(status);
+   const updateData = {
+    $set:{
+      status
+    }
+   }
+    const result = await userCollection.updateOne(query,updateData)
+    res.send(result)
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+} )
 
 
     // Send a ping to confirm a successful connection
