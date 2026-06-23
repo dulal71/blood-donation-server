@@ -24,7 +24,23 @@ async function run() {
     const database=client.db("blood-donation")
     const donationRequestCollection=database.collection("donation-request")
    const userCollection = database.collection('user')
-// get donation request
+
+// token verify
+const verifyToken = (req,res,next)=>{
+
+const authHeader = req.headers?.authorization
+if(!authHeader){
+  return res.status(401).send({message: 'unauthorized access'})
+}
+const token = authHeader.split(" ")[1]
+console.log(token);
+if(!token){
+   return res.status(401).send({message: 'unauthorized access'})
+}
+next()
+}
+
+// get pending donation request
 app.get('/api/donationRequest',async(req,res)=>{
   try{
 const query={}
@@ -48,6 +64,29 @@ const perPage = 9
 
 })
 
+// get all donation request for admin
+app.get('/api/admin/donation-requests', verifyToken ,async(req,res)=>{
+  try{
+const query={}
+if(req.query.status){
+  query.status=req.query.status
+}
+
+const  page = parseInt(req.query.page) || 1
+const perPage = 9
+ const skip = (page-1) * perPage
+ const totalData = await donationRequestCollection.countDocuments(query)
+ const cursor= donationRequestCollection.find(query).skip(skip).limit(perPage)
+  const result = await cursor.toArray()
+ return res.send({ result, totalData })
+}catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+
+})
 // get donation by id
 app.get('/api/donationRequest/:id',async(req,res)=>{
   try{
@@ -183,21 +222,11 @@ res.status(500).json({
   }
 })
 
-// update user status
-app.patch('/api/user/:id',async(req,res)=>{
+// get all user
+app.get('/api/user',async(req,res)=>{
   try{
-    const id=req.params.id;
-    const query={
-      _id:new ObjectId(id)
-    }
-    const   {status}  = req.body
-    console.log(status);
-   const updateData = {
-    $set:{
-      status
-    }
-   }
-    const result = await userCollection.updateOne(query,updateData)
+    const cursor = userCollection.find()
+    const result = await cursor.toArray()
     res.send(result)
   }catch(error){
     res.status(500).json({
