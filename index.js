@@ -24,21 +24,50 @@ async function run() {
     const database=client.db("blood-donation")
     const donationRequestCollection=database.collection("donation-request")
    const userCollection = database.collection('user')
+   const userSession=database.collection('session')
 
-// token verify
-const verifyToken = (req,res,next)=>{
+   // token verify
+const verifyToken =async (req,res,next)=>{
 
 const authHeader = req.headers?.authorization
 if(!authHeader){
   return res.status(401).send({message: 'unauthorized access'})
 }
 const token = authHeader.split(" ")[1]
-console.log(token);
+
 if(!token){
    return res.status(401).send({message: 'unauthorized access'})
 }
+const query = {token : token}
+const session = await userSession.findOne(query)
+console.log(session);
+const userId = session.userId
+const userQuery={
+  _id:userId
+}
+const user = await userCollection.findOne(userQuery)
+req.user = user
 next()
 }
+ 
+
+// verify-admin
+const verifyAdmin=async(req,res,next)=>{
+  if(req.user?.role !== 'admin'){
+    return res.status(403).send({message:'forbidden access'})
+  }
+next()
+}
+ 
+
+// verify-volunteer
+const verifyVolunteer=async(req,res,next)=>{
+  if(req.user?.role !== 'volunteer'){
+    return res.status(403).send({message:'forbidden access'})
+  }
+next()
+}
+
 
 // get pending donation request
 app.get('/api/donationRequest',async(req,res)=>{
@@ -64,8 +93,9 @@ const perPage = 9
 
 })
 
+
 // get all donation request for admin
-app.get('/api/admin/donation-requests', verifyToken ,async(req,res)=>{
+app.get('/api/admin/donation-requests', verifyToken,verifyAdmin ,async(req,res)=>{
   try{
 const query={}
 if(req.query.status){
@@ -87,8 +117,10 @@ const perPage = 9
   }
 
 })
+
+
 // get donation by id
-app.get('/api/donationRequest/:id',async(req,res)=>{
+app.get('/api/donationRequest/:id',verifyToken, async(req,res)=>{
   try{
 const id = req.params.id
 const query = {
@@ -106,10 +138,15 @@ const query = {
 
 })
 
+
 // get donation by  user id
-app.get('/api/donationRequest/user/:requesterId',async(req,res)=>{
+app.get('/api/donationRequest/user/:requesterId',verifyToken,async(req,res)=>{
   try{
 const requesterId = req.params.requesterId
+
+if(req.user._id.toString() !== req.params.requesterId){
+return res.status(403).send({message: 'forbidden'})
+}
 const query={requesterId}
 if(req.query.status && req.query.status !== 'undefined'){
   query.status=req.query.status
@@ -134,7 +171,7 @@ const totalData =await donationRequestCollection.countDocuments(query)
 
 
 // add donation request
-app.post('/api/donationRequest',async(req,res)=>{
+app.post('/api/donationRequest',verifyToken, async(req,res)=>{
   try{
     const data = req.body
    
@@ -154,33 +191,10 @@ res.send(result)
 })
 
 
-// update status 
 
-app.patch('/api/donationRequest/:id' ,async(req,res)=>{
-  try{
-    const id = req.params.id
-    const {status, donorId, donorEmail, donorName}=req.body
-    const query={
-      _id:new ObjectId(id)
-    }
-    
-    const isStatusOnly = status === "done" || status === "canceled" 
-    const updateData = isStatusOnly ? 
-    {status} : {status, donorId, donorEmail, donorName}
-  
-    const result =await donationRequestCollection.updateOne(query,{$set:updateData})
-    res.send(result)
-
-  }catch(error){
-res.status(500).json({
-  success:false,
- message: error.message 
-})
-  }
-})
 
 //donation edit
-app.patch('/api/donationRequest/edit/:id',async(req,res)=>{
+app.patch('/api/donationRequest/edit/:id', verifyToken , async(req,res)=>{
   try{
     const id=req.params.id;
     const query={
@@ -206,7 +220,7 @@ app.patch('/api/donationRequest/edit/:id',async(req,res)=>{
 } )
 
 // delete donation
-app.delete('/api/donationRequest/:id' ,async(req,res)=>{
+app.delete('/api/donationRequest/:id' ,verifyToken, async(req,res)=>{
   try{
     const id = req.params.id
    const query={
@@ -223,7 +237,7 @@ res.status(500).json({
 })
 
 // get all user
-app.get('/api/user',async(req,res)=>{
+app.get('/api/user',verifyToken, verifyVolunteer, async(req,res)=>{
   try{
     const cursor = userCollection.find()
     const result = await cursor.toArray()
