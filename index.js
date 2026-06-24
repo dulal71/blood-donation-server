@@ -25,7 +25,7 @@ async function run() {
     const donationRequestCollection=database.collection("donation-request")
    const userCollection = database.collection('user')
    const userSession=database.collection('session')
-
+ const fundingCollection = database.collection('funding')
    // token verify
 const verifyToken =async (req,res,next)=>{
 
@@ -251,6 +251,57 @@ app.get('/api/user',verifyToken, verifyVolunteer, async(req,res)=>{
 } )
 
 
+// add funding data
+
+app.post('/api/funding' ,async(req,res)=>{
+try{
+ const {session_id,name,userId,userEmail,amount,status}=req.body 
+ const isExist = await fundingCollection.findOne({session_id})
+ if(isExist){
+return res.send({
+        success: false,
+        message: 'Data already exists'
+      });
+ }
+ const data={
+  session_id,
+  name,
+  userId,
+  userEmail ,
+  amount,
+  status
+ }
+const result = await fundingCollection.insertOne(data)
+res.send(result)
+}catch(error){
+  res.status(500).json({
+    error:false,
+    message:error.message
+  })
+}
+
+})
+
+
+//get all funding data
+
+app.get('/api/funding', verifyToken ,async(req,res)=>{
+  try{
+    const perPage = 10
+    const page = req.query.page || 1
+    const skip= (page - 1) * 10 ;
+   
+const cursor = fundingCollection.find().skip(skip).limit(perPage)
+const result = await cursor.toArray()
+const totalFunding=await fundingCollection.countDocuments()
+res.send({result,totalFunding})
+  }catch(error){
+res.status(500).json({
+  error:false,
+  message:error.message
+})
+  }
+})
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
