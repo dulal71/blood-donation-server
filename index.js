@@ -76,6 +76,25 @@ const query={}
 if(req.query.status){
   query.status=req.query.status
 }
+if(req.query.district){
+  query.recipientDistrict=req.query.district
+}
+if(req.query.search){
+  query.recipientName = { 
+    $regex: req.query.search, 
+    $options: 'i' 
+  };
+}
+if(req.query.upazila){
+  query.recipientUpazila=req.query.upazila
+}
+
+if(req.query.bloodGroup){
+query.bloodGroup =req.query.bloodGroup
+ 
+}
+
+
 
 const  page = parseInt(req.query.page) || 1
 const perPage = 9
@@ -294,7 +313,21 @@ app.get('/api/funding', verifyToken ,async(req,res)=>{
 const cursor = fundingCollection.find().skip(skip).limit(perPage)
 const result = await cursor.toArray()
 const totalFunding=await fundingCollection.countDocuments()
-res.send({result,totalFunding})
+const totalFundingAmount = await fundingCollection.aggregate([
+  {
+    $group: {
+      _id: null,
+      total: {
+        $sum: { $toDouble: "$amount" }
+      }
+    }
+  }
+]).toArray();
+res.send({result,totalFunding,
+ result,
+  totalFunding,
+  totalAmount: totalFundingAmount[0]?.total || 0
+})
   }catch(error){
 res.status(500).json({
   error:false,
