@@ -238,6 +238,35 @@ app.patch('/api/donationRequest/edit/:id', verifyToken , async(req,res)=>{
   }
 } )
 
+
+//update donation status
+app.patch('/api/donationRequest/:id', verifyToken , async(req,res)=>{
+  try{
+    const id=req.params.id;
+    const query={
+      _id:new ObjectId(id)
+    }
+    const  { status,donorId,donorEmail,donorName } = req.body
+  
+    const updateData = {
+    $set:{
+     status,
+     donorId,
+     donorEmail,
+     donorName 
+    }
+   }
+   console.log(updateData);
+    const result = await donationRequestCollection.updateOne(query,updateData)
+    res.send(result)
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+} )
+
 // delete donation
 app.delete('/api/donationRequest/:id' ,verifyToken, async(req,res)=>{
   try{
@@ -335,7 +364,7 @@ res.status(500).json({
 })
   }
 })
-    // Send a ping to confirm a successful connection
+
     // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
