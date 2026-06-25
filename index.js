@@ -304,7 +304,7 @@ res.send(result)
 
 //get all funding data
 
-app.get('/api/funding', verifyToken ,async(req,res)=>{
+app.get('/api/funding',async(req,res)=>{
   try{
     const perPage = 10
     const page = req.query.page || 1
