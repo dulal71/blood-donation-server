@@ -100,7 +100,7 @@ const  page = parseInt(req.query.page) || 1
 const perPage = 9
  const skip = (page-1) * perPage
  const totalData = await donationRequestCollection.countDocuments(query)
- const cursor= donationRequestCollection.find(query).skip(skip).limit(perPage)
+ const cursor= donationRequestCollection.find(query).sort({ createdAt: -1 }).skip(skip).limit(perPage)
   const result = await cursor.toArray()
  return res.send({ result, totalData })
 }catch(error){
@@ -125,7 +125,7 @@ const  page = parseInt(req.query.page) || 1
 const perPage = 9
  const skip = (page-1) * perPage
  const totalData = await donationRequestCollection.countDocuments(query)
- const cursor= donationRequestCollection.find(query).skip(skip).limit(perPage)
+ const cursor= donationRequestCollection.find(query).sort({ createdAt: -1 }).skip(skip).limit(perPage)
   const result = await cursor.toArray()
  return res.send({ result, totalData })
 }catch(error){
@@ -317,7 +317,8 @@ return res.send({
   userId,
   userEmail ,
   amount,
-  status
+  status,
+  createdAt: new Date()
  }
 const result = await fundingCollection.insertOne(data)
 res.send(result)
@@ -339,7 +340,7 @@ app.get('/api/funding',async(req,res)=>{
     const page = req.query.page || 1
     const skip= (page - 1) * 10 ;
    
-const cursor = fundingCollection.find().skip(skip).limit(perPage)
+const cursor = fundingCollection.find().sort({ createdAt: -1 }). skip(skip).limit(perPage)
 const result = await cursor.toArray()
 const totalFunding=await fundingCollection.countDocuments()
 const totalFundingAmount = await fundingCollection.aggregate([
